@@ -1,0 +1,20 @@
+server: # 내장 웹 서버 관련 설정
+  port: 7000 # 애플리케이션이 요청을 수신할 HTTP 포트
+
+spring: # Spring Boot 관련 설정
+  application: # 애플리케이션의 기본 정보 설정
+    name: cqrs-write # 애플리케이션을 식별하는 이름
+
+  datasource: # 데이터베이스 연결 정보 설정
+    url: jdbc:mysql://localhost:3307/cqrs_write # localhost의 3307 포트에 있는 cqrs_write MySQL 데이터베이스에 연결
+    driver-class-name: com.mysql.cj.jdbc.Driver # MySQL JDBC 드라이버 클래스 지정
+    username: root # 데이터베이스 접속 사용자 이름
+    password: ${DB_PASSWORD} # DB_PASSWORD 환경 변수 또는 외부 설정값을 데이터베이스 접속 비밀번호로 사용
+
+  jpa: # Spring Data JPA 관련 설정
+    hibernate: # JPA 구현체인 Hibernate 관련 설정
+      ddl-auto: update # 엔티티와 데이터베이스 스키마를 비교하여 필요한 변경 사항을 자동 반영
+    properties: # Hibernate에 직접 전달할 세부 속성
+      hibernate: # Hibernate 고유 속성 설정
+        format_sql: true # 실행되는 SQL을 읽기 쉽도록 줄바꿈과 들여쓰기를 적용
+        show_sql: true # Hibernate가 실행하는 SQL을 콘솔 로그에 출력

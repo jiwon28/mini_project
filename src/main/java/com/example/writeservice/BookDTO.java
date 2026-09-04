@@ -1,3 +1,7 @@
+/*
+HTTP 요청 데이터 전달
+ */
+
 package com.example.writeservice; // 현재 클래스가 속한 패키지
 
 import lombok.Data;

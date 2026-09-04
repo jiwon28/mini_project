@@ -1,0 +1,18 @@
+# 내장 웹 서버 관련 설정입니다.
+server:
+  # 애플리케이션이 HTTP 요청을 받을 포트입니다.
+  port: 8000
+
+# Spring Boot가 사용하는 애플리케이션 설정입니다.
+spring:
+  # 애플리케이션 식별 정보입니다.
+  application:
+    # 서비스 이름을 cqrs-read로 지정합니다.
+    name: cqrs-read
+
+  # Spring Data 관련 설정입니다.
+  data:
+    # MongoDB 연결 설정입니다.
+    mongodb:
+      # localhost의 27017 포트에 있는 mymongo 데이터베이스에 연결합니다.
+      uri: mongodb://localhost:27017/mymongo

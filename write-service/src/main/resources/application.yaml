@@ -18,3 +18,11 @@ spring: # Spring Boot 관련 설정
       hibernate: # Hibernate 고유 속성 설정
         format_sql: true # 실행되는 SQL을 읽기 쉽도록 줄바꿈과 들여쓰기를 적용
         show_sql: true # Hibernate가 실행하는 SQL을 콘솔 로그에 출력
+
+  kafka: # Kafka 접속 및 메시지 발행 설정
+    bootstrap-servers: localhost:9092 # 로컬에서 실행하는 애플리케이션이 접속할 Kafka 브로커 주소
+
+    producer: # Kafka에 메시지를 보내는 생산자 설정
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer # 메시지 키를 문자열에서 바이트로 변환 (bid를 키로 사용하면 문자열 변환 필요)
+      # 메시지 값은 문자열이어야 하며, BookDTO를 보내려면 JSON 문자열로 변환하거나 객체용 직렬화기를 설정해야 합니다.
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer

@@ -13,6 +13,10 @@ import lombok.Data;
 @Data // 모든 필드의 getter, setter, toString(), equals(), hashCode()를 Lombok이 자동 생성
 public class BookDTO {
 
+    // 도서 식별자입니다. 신규 등록 시 실제 ID는 Book 엔티티를 저장할 때 JPA가 생성합니다.
+    // 현재 저장 로직은 요청의 bid를 사용하지 않으며, 생성된 ID를 이 DTO에 자동으로 채우지도 않습니다.
+    private Long bid;
+
     private String title; // 도서 제목
     private String author; // 저자 이름
     private String category; // 도서 분류

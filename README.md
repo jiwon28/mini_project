@@ -1,4 +1,4 @@
-# Mini Project 2 — CQRS 도서 서비스
+# Mini Project — CQRS 도서 서비스
 
 도서 등록과 조회의 책임을 서로 다른 애플리케이션과 데이터 저장소로 분리하며 CQRS(Command Query Responsibility Segregation)를 학습하는 프로젝트입니다.
 
@@ -122,7 +122,7 @@ MongoDB에 도서 문서가 별도로 준비되어 있지 않으면 조회 API�
 ## 디렉터리 구조
 
 ```text
-mini_project2/
+mini_project/
 ├─ README.md
 ├─ write-service/
 │  ├─ build.gradle

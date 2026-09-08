@@ -257,8 +257,24 @@ sequenceDiagram
 
 이 구조가 구현되면 명령 처리와 조회 처리를 독립적으로 확장하면서도, 최종적 일관성(eventual consistency)을 통해 두 저장소의 상태를 연결할 수 있습니다.
 
+## 루트 프로젝트 빌드 및 IntelliJ 설정
+
+저장소 루트의 `settings.gradle`이 `write-service`와 `read-service`를 Gradle 하위 프로젝트로 등록합니다. 각 서비스 디렉터리에서 기존처럼 독립적으로 빌드하거나 실행할 수도 있습니다.
+
+IntelliJ에서 루트 폴더만 일반 Java 프로젝트로 열면 서비스 소스와 Spring 의존성이 인식되지 않을 수 있습니다. Project 창에서 루트 `build.gradle`을 우클릭하여 **Import Gradle Project**로 연결하고 Gradle 동기화를 완료하세요. 이미 연결되어 해당 메뉴가 없다면 Gradle 도구 창에서 **Sync All Gradle Projects**를 실행하세요. Gradle JVM은 JDK 17을 사용합니다.
+
+저장소 루트에서 실행:
+
+```powershell
+.\gradlew.bat build
+.\gradlew.bat :write-service:bootRun
+```
+
+`bootRun` 및 쓰기 서비스의 컨텍스트 테스트에는 위에서 설명한 MySQL과 `DB_PASSWORD` 설정이 필요합니다.
+
 ## 현재 검증 상태
 
 - `read-service`: Gradle 테스트 및 Spring 애플리케이션 컨텍스트 로딩 성공
-- `write-service`: 기본 컨텍스트 테스트가 존재하지만, 이 README 작성 시점에는 데이터베이스 연동 테스트를 별도로 수행하지 않음
+- `write-service`: Gradle 테스트 및 MySQL 연결을 포함한 Spring 애플리케이션 컨텍스트 로딩 성공
+- 루트 `clean build`: 두 서비스의 컴파일, 테스트 및 실행 JAR 생성 성공 (2026-09-08)
 - API 및 이벤트 기반 동기화에 대한 통합 테스트는 아직 없음

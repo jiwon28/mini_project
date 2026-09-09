@@ -1,4 +1,4 @@
-﻿# Mini Project — CQRS 도서 서비스
+# Mini Project — CQRS 도서 서비스
 
 도서 등록과 조회를 별도 애플리케이션과 데이터 저장소로 분리하는 CQRS 학습 프로젝트입니다. Write Service가 MySQL에 책을 저장하고 Kafka에 메시지를 발행하면, Read Service가 이를 받아 MongoDB에 저장합니다. 등록부터 GET 조회까지 수동 통합 검증을 완료했습니다.
 

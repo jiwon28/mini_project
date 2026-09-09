@@ -10,9 +10,25 @@ spring:
     # 서비스 이름을 cqrs-read로 지정합니다.
     name: cqrs-read
 
-  # Spring Data 관련 설정입니다.
-  data:
-    # MongoDB 연결 설정입니다.
-    mongodb:
-      # localhost의 27017 포트에 있는 mymongo 데이터베이스에 연결합니다.
-      uri: mongodb://localhost:27017/mymongo
+  # Spring Boot 4의 MongoDB 연결 설정입니다.
+  mongodb:
+    # Consumer가 저장하는 mymongo 데이터베이스를 조회 API에서도 사용합니다.
+    uri: mongodb://localhost:27017/mymongo
+
+  # Kafka 브로커 접속 및 메시지 송수신 설정입니다.
+  kafka:
+    bootstrap-servers: localhost:9092
+
+    consumer:
+      # 같은 그룹의 Consumer들이 토픽의 파티션을 나누어 소비합니다.
+      group-id: adamsoft
+      # 유효한 커밋 오프셋이 없을 때 남아 있는 가장 오래된 메시지부터 소비합니다.
+      auto-offset-reset: earliest
+      # 수신한 메시지 키와 값을 문자열로 변환합니다.
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+    # 강의 예제의 Producer 설정입니다. 수신만 하는 현재 단계에서는 사용하지 않습니다.
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer

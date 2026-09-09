@@ -1,0 +1,7 @@
+# Dockerfile에서 사용하는 실행 JAR만 빌드 컨텍스트에 포함합니다.
+**
+!Dockerfile
+!build/
+!build/libs/
+!build/libs/*.jar
+build/libs/*-plain.jar

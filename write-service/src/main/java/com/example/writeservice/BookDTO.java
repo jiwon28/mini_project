@@ -14,7 +14,7 @@ import lombok.Data;
 public class BookDTO {
 
     // 도서 식별자입니다. 신규 등록 시 실제 ID는 Book 엔티티를 저장할 때 JPA가 생성합니다.
-    // 현재 저장 로직은 요청의 bid를 사용하지 않으며, 생성된 ID를 이 DTO에 자동으로 채우지도 않습니다.
+    // 요청의 bid는 저장에 사용하지 않으며, BookService가 저장 후 생성된 ID를 채워 Kafka에 전달합니다.
     private Long bid;
 
     private String title; // 도서 제목

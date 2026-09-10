@@ -6,7 +6,7 @@ spring: # Spring Boot 관련 설정
     name: cqrs-write # 애플리케이션을 식별하는 이름
 
   datasource: # 데이터베이스 연결 정보 설정
-    url: jdbc:mysql://localhost:3307/cqrs_write # localhost의 3307 포트에 있는 cqrs_write MySQL 데이터베이스에 연결
+    url: ${DB_URL:jdbc:mysql://localhost:3307/cqrs_write} # localhost의 3307 포트에 있는 cqrs_write MySQL 데이터베이스에 연결
     driver-class-name: com.mysql.cj.jdbc.Driver # MySQL JDBC 드라이버 클래스 지정
     username: root # 데이터베이스 접속 사용자 이름
     password: ${DB_PASSWORD} # DB_PASSWORD 환경 변수 또는 외부 설정값을 데이터베이스 접속 비밀번호로 사용
@@ -20,7 +20,7 @@ spring: # Spring Boot 관련 설정
         show_sql: true # Hibernate가 실행하는 SQL을 콘솔 로그에 출력
 
   kafka: # Kafka 접속 및 메시지 발행 설정
-    bootstrap-servers: localhost:9092 # 로컬에서 실행하는 애플리케이션이 접속할 Kafka 브로커 주소
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092} # 로컬에서 실행하는 애플리케이션이 접속할 Kafka 브로커 주소
 
     producer: # Kafka에 메시지를 보내는 생산자 설정
       key-serializer: org.apache.kafka.common.serialization.StringSerializer # 메시지 키를 문자열에서 바이트로 변환 (bid를 키로 사용하면 문자열 변환 필요)

@@ -11,7 +11,24 @@ services:
     ports:
       - "9092:9092"
     environment:
-      KAFKA_ADVERTISED_HOST_NAME: 127.0.0.1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_BROKER_ID: 1001
+      # 이전에 자동 할당된 ID를 수동 지정할 수 있도록 허용 범위를 맞춥니다.
+      KAFKA_RESERVED_BROKER_MAX_ID: 1001
+      # 기존 브로커 데이터 경로를 고정해 컨테이너 재생성 후에도 재사용합니다.
+      KAFKA_LOG_DIRS: /kafka/kafka-logs-b0de80d45874
+
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9093,EXTERNAL://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9093,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - kafka_data:/kafka
+
+volumes:
+  kafka_data:
+    # 현재 실습 데이터가 저장된 기존 볼륨을 사용합니다.
+    external: true
+    name: 0d40e4adccab5093c006739c8fce67c44241cd040ae3d3e7025ba229feab3c46

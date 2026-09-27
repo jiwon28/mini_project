@@ -1,91 +1,102 @@
-# Mini Project — Kubernetes CQRS 도서 서비스
+# CQRS Book Service
 
-도서 등록과 조회를 분리한 CQRS 학습 프로젝트입니다. Write Service가 MySQL에 도서를 저장하고 Kafka에 이벤트를 발행하면, Read Service가 이벤트를 받아 MongoDB에 조회 모델을 구성합니다.
+MySQL 기반의 Write 모델과 MongoDB 기반의 Read 모델을 분리하고, Apache Kafka를 통해 데이터를 비동기 동기화한 개인 프로젝트입니다.
 
-최종 제출본에서는 두 애플리케이션과 MySQL, MongoDB, Kafka, ZooKeeper를 Kubernetes 리소스로 구성했습니다. Write Application은 2개의 Pod로 실행하도록 설정했으며, NGINX Ingress를 통해 Write/Read API에 접근하도록 구성했습니다.
+Spring Boot로 Write/Read 서비스를 각각 구현했으며, Docker 이미지로 패키징한 뒤 Kubernetes 환경에서 Deployment, Service, PVC와 NGINX Ingress를 구성했습니다.
 
-## 구현 결과
+## Project Overview
 
-| 영역 | 구현 내용 | 상태 |
-|---|---|---|
-| Write Service | 도서 등록, MySQL 저장, Kafka 이벤트 발행 | 완료 |
-| Read Service | Kafka 이벤트 수신, MongoDB 저장, 도서 조회 | 완료 |
-| 메시징 | Kafka와 ZooKeeper 구성 | 완료 |
-| 컨테이너 | Write/Read 이미지 Docker Hub 업로드 | 완료 |
-| Kubernetes | Deployment, Service, PVC 구성 | 완료 |
-| 가용성 실습 | Write Application `replicas: 2` | 완료 |
-| 외부 접근 | NGINX Ingress 경로 및 rewrite 구성 | 완료 |
-| 영속 스토리지 | MySQL/MongoDB PVC 각 1Gi | 완료 |
-| NFS | NFS 기반 PV 및 연결 | 미구현 |
+- **진행 기간:** 2026.09.03 ~ 2026.09.17
+- **프로젝트 유형:** 개인 프로젝트
+- **핵심 목표:** CQRS 패턴과 이벤트 기반 데이터 동기화 이해
+- **배포 목표:** 컨테이너화한 서비스를 Kubernetes에서 분리 배포하고 Ingress로 노출
 
-## 아키텍처
+## System Architecture
 
 ```mermaid
 flowchart LR
     Client[Client] --> Ingress[NGINX Ingress]
 
-    Ingress -->|POST /write/cqrs/book| WSVC[write-service :7000]
-    Ingress -->|GET /read/cqrs/book| RSVC[read-service :8000]
+    Ingress -->|POST /write/cqrs/book| Write[Write Service<br/>2 Pods]
+    Write --> MySQL[(MySQL<br/>cqrs_write)]
+    Write -->|Publish| Kafka[Kafka<br/>cqrs-topic]
 
-    subgraph Write Application
-        WSVC --> W1[Write Pod 1]
-        WSVC --> W2[Write Pod 2]
-    end
+    Kafka -->|Consume| Read[Read Service<br/>1 Pod]
+    Read --> MongoDB[(MongoDB<br/>mymongo.books)]
+    Ingress -->|GET /read/cqrs/book| Read
 
-    W1 --> MySQL[(MySQL cqrs_write)]
-    W2 --> MySQL
-    W1 --> Kafka[Kafka cqrs-topic]
-    W2 --> Kafka
-
-    Kafka --> R1[Read Pod]
-    R1 --> MongoDB[(MongoDB mymongo.books)]
-    RSVC --> R1
-
-    MySQL --- MySQLPVC[(mysql-pvc 1Gi)]
-    MongoDB --- MongoPVC[(mongodb-pvc 1Gi)]
+    MySQL --- MySQLPVC[(MySQL PVC)]
+    MongoDB --- MongoPVC[(MongoDB PVC)]
     Kafka --> ZooKeeper[ZooKeeper]
 ```
 
-## 서비스 구성
+### Architecture Point
 
-| 구성 요소 | Replicas | Service 포트 | 이미지/저장소 |
-|---|---:|---:|---|
-| Write Service | 2 | 7000 | `jiwon28/write-service:1.0` |
-| Read Service | 1 | 8000 | `jiwon28/read-service:1.0` |
-| MySQL | 1 | 3306 | `mysql:8.4`, `mysql-pvc` 1Gi |
-| MongoDB | 1 | 27017 | `mongo:7.0`, `mongodb-pvc` 1Gi |
-| Kafka | 1 | 9092 | `wurstmeister/kafka:latest` |
-| ZooKeeper | 1 | 2181 | `wurstmeister/zookeeper:latest` |
+- **Command / Query 분리:** 도서 등록은 Write Service, 조회는 Read Service가 담당합니다.
+- **Database 분리:** 쓰기 모델은 MySQL, 조회 모델은 MongoDB에 저장합니다.
+- **Event-Driven 동기화:** Write Service가 발행한 도서 이벤트를 Read Service가 Kafka로 수신합니다.
+- **독립적 확장:** Write Application은 Kubernetes에서 2개의 Pod로 구성했습니다.
+- **단일 진입점:** NGINX Ingress가 `/write`, `/read` 요청을 각 서비스로 전달합니다.
 
-## Docker 이미지
+## Tech Stack
 
-- Write Service: [jiwon28/write-service:1.0](https://hub.docker.com/r/jiwon28/write-service)
-- Read Service: [jiwon28/read-service:1.0](https://hub.docker.com/r/jiwon28/read-service)
+| Category | Technology |
+|---|---|
+| Language | Java 17 |
+| Framework | Spring Boot 4.1.1, Spring Web MVC |
+| Write Database | MySQL 8.4, Spring Data JPA |
+| Read Database | MongoDB 7.0, Spring Data MongoDB |
+| Message Broker | Apache Kafka, ZooKeeper |
+| Build | Gradle |
+| Container | Docker, Docker Hub |
+| Orchestration | Kubernetes, NGINX Ingress |
 
-두 이미지는 Java 17 애플리케이션 JAR을 실행하며 UID/GID `10001:10001`의 비-root 사용자로 동작합니다.
+## Key Features
 
-## 데이터 처리 흐름
+### 1. Write Service
 
-1. 클라이언트가 Write API로 도서 등록을 요청합니다.
-2. Write Service가 도서를 MySQL `cqrs_write.book`에 저장합니다.
-3. 저장된 도서의 `bid`를 포함한 이벤트를 Kafka `cqrs-topic`에 발행합니다.
-4. Read Service가 이벤트를 소비하여 MongoDB `mymongo.books`에 저장합니다.
-5. 클라이언트가 Read API를 호출하면 MongoDB의 조회 모델을 반환합니다.
+- `POST /cqrs/book`으로 도서 등록 요청을 처리합니다.
+- 도서 데이터를 MySQL의 `cqrs_write.book` 테이블에 저장합니다.
+- 데이터베이스에서 생성한 `bid`를 포함해 Kafka `cqrs-topic`으로 이벤트를 발행합니다.
 
-Kafka 전달은 비동기이므로 Write API 응답 직후에는 새 도서가 Read API에 아직 보이지 않을 수 있습니다.
+### 2. Read Service
 
-## API
+- Kafka에서 도서 생성 이벤트를 비동기적으로 수신합니다.
+- 수신한 이벤트를 MongoDB의 `mymongo.books` 컬렉션에 저장합니다.
+- `GET /cqrs/book`으로 MongoDB의 조회 모델을 반환합니다.
 
-### Kubernetes Ingress 경로
+### 3. Kubernetes Deployment
 
-| 기능 | Method | 외부 경로 | 내부 전달 경로 |
+- Write Service는 `replicas: 2`, Read Service는 `replicas: 1`로 구성했습니다.
+- MySQL과 MongoDB에는 각각 1Gi PVC를 연결했습니다.
+- Kafka와 ZooKeeper를 클러스터 내부 서비스로 구성했습니다.
+- 애플리케이션과 데이터베이스는 Kubernetes Service 이름으로 통신합니다.
+
+### 4. NGINX Ingress
+
+Ingress는 외부 경로의 접두사를 제거한 뒤 각 애플리케이션으로 전달합니다.
+
+| Method | External Path | Target Service | Internal Path |
 |---|---|---|---|
-| 도서 등록 | `POST` | `/write/cqrs/book` | Write Service `/cqrs/book` |
-| 도서 조회 | `GET` | `/read/cqrs/book` | Read Service `/cqrs/book` |
+| `POST` | `/write/cqrs/book` | Write Service | `/cqrs/book` |
+| `GET` | `/read/cqrs/book` | Read Service | `/cqrs/book` |
 
-Ingress는 `/write`와 `/read` 접두사를 제거한 뒤 각 서비스로 전달합니다.
+## Data Flow
 
-### 등록 요청 예시
+```text
+Client
+  └─ POST /write/cqrs/book
+       └─ Write Service
+            ├─ MySQL 저장
+            └─ Kafka 이벤트 발행
+                 └─ Read Service 이벤트 수신
+                      └─ MongoDB 저장
+                           └─ GET /read/cqrs/book
+```
+
+Kafka를 통한 데이터 전달은 비동기 방식이므로, 등록 요청 직후에는 Read API에 새 데이터가 아직 반영되지 않았을 수 있습니다.
+
+## API Example
 
 ```http
 POST /write/cqrs/book
@@ -102,67 +113,59 @@ Content-Type: application/json
 }
 ```
 
-성공 응답은 HTTP 200과 `success`입니다.
+성공 시 HTTP 200과 `success`를 반환합니다.
 
-## Kubernetes 제출 구성
+## Docker Images
 
-최종 제출한 `k8s-yaml.zip`에는 다음 리소스가 포함되어 있습니다.
+- [jiwon28/write-service:1.0](https://hub.docker.com/r/jiwon28/write-service)
+- [jiwon28/read-service:1.0](https://hub.docker.com/r/jiwon28/read-service)
 
-- Write/Read Deployment 및 ClusterIP Service
-- MySQL/MongoDB Deployment, ClusterIP Service 및 PVC
-- Kafka/ZooKeeper Deployment 및 ClusterIP Service
-- Write/Read 경로를 제공하는 NGINX Ingress
-
-애플리케이션 연결 정보는 다음 환경 변수로 전달합니다.
-
-| 대상 | 환경 변수 | Kubernetes 주소 |
+| Service | Environment Variable | Kubernetes Address |
 |---|---|---|
 | Write → MySQL | `DB_URL` | `jdbc:mysql://mysql-service:3306/cqrs_write` |
 | Write → Kafka | `KAFKA_BOOTSTRAP_SERVERS` | `kafka-service:9092` |
 | Read → MongoDB | `MONGODB_URI` | `mongodb://mongodb-service:27017/mymongo` |
 | Read → Kafka | `KAFKA_BOOTSTRAP_SERVERS` | `kafka-service:9092` |
 
-PVC는 클러스터의 기본 StorageClass를 사용합니다. 별도의 NFS PersistentVolume, NFS 서버 주소 및 경로는 최종 제출본에 포함하지 않았습니다.
+## Kubernetes Resources
 
-## 검증 기록
+최종 제출본은 다음 리소스로 구성했습니다.
 
-로컬 환경에서 다음 흐름을 수동으로 확인했습니다.
+```text
+Ingress
+├─ Write Deployment / Service (2 Pods)
+├─ Read Deployment / Service (1 Pod)
+├─ MySQL Deployment / Service / PVC
+├─ MongoDB Deployment / Service / PVC
+├─ Kafka Deployment / Service
+└─ ZooKeeper Deployment / Service
+```
+
+## Verification
+
+로컬 환경에서 다음 흐름을 수동으로 검증했습니다.
 
 ```text
 POST 등록 → MySQL 저장 → Kafka 발행/수신 → MongoDB 저장 → GET 조회
 ```
 
-- Write/Read 로그에서 동일한 `bid: 202` 확인
-- MongoDB 조회 결과가 3건에서 4건으로 증가
-- GET 응답에서 등록한 도서의 `bid`, `pages`, `price` 확인
-- Write/Read 서비스의 실행 JAR과 Docker 이미지 생성
-- Kubernetes 배포용 YAML 및 Ingress 경로 구성
+- Write/Read 로그에서 동일한 `bid` 확인
+- MongoDB 문서 증가 확인
+- GET 응답에서 등록한 도서 데이터 확인
+- Docker 이미지 생성 및 Docker Hub 업로드
+- Kubernetes Deployment, Service, PVC, Ingress YAML 작성
 
-Kubernetes 리소스의 실제 실행 로그와 `kubectl get` 결과는 저장소에 보관되어 있지 않습니다.
+## Notes
 
-## 기술 스택
+- PVC는 클러스터의 기본 StorageClass를 사용하며, NFS 기반 PersistentVolume은 구성하지 않았습니다.
+- Kubernetes 실행 당시의 `kubectl get` 및 Pod 로그는 저장소에 남아 있지 않습니다.
+- 최종 제출한 `read-service:1.0` 이미지에는 외부 연결 설정과 `MongoTemplate` 기반 Consumer가 반영되어 있으나, 해당 변경 일부는 Git 저장소에 동기화되지 않았습니다.
 
-- Java 17
-- Spring Boot 4.1.1
-- Spring Web MVC
-- Spring Data JPA / MySQL
-- Spring Data MongoDB / MongoDB
-- Spring for Apache Kafka
-- Gradle
-- Docker / Docker Hub
-- Kubernetes / NGINX Ingress
+## Future Improvements
 
-## 알려진 제한 사항과 후속 개선
-
-- NFS 기반 PV를 구성하지 않았습니다.
-- 제출 YAML의 MySQL 비밀번호가 평문이므로 Kubernetes Secret으로 분리해야 합니다.
-- 자동화된 API·Kafka 통합 테스트가 없습니다.
-- Kafka 메시지 재수신 시 `bid` 기준 중복 방지와 upsert가 필요합니다.
-- Producer의 JSON 직접 조합을 표준 직렬화 방식으로 교체해야 합니다.
-- 재시도, DLQ, Outbox 등 실패 처리와 데이터 정합성 보강이 필요합니다.
-- readiness/liveness probe와 리소스 requests/limits가 없습니다.
-- Kafka와 ZooKeeper 이미지의 `latest` 태그를 고정 버전으로 교체하는 것이 좋습니다.
-
-## 소스와 제출 이미지
-
-최종 제출한 `read-service:1.0` 이미지에는 `MONGODB_URI`, `KAFKA_BOOTSTRAP_SERVERS` 외부 설정과 `MongoTemplate` 기반 Kafka Consumer가 포함되어 있습니다. Docker 이미지 생성 이후의 소스 변경이 Git 저장소에 모두 반영되지 않아, 현재 저장소 소스와 제출 이미지 사이에는 일부 차이가 있습니다.
+- NFS 기반 PersistentVolume 구성
+- Kubernetes Secret을 이용한 데이터베이스 비밀번호 관리
+- Kafka 메시지 중복 처리와 MongoDB upsert 적용
+- 재시도, DLQ, Outbox 패턴을 통한 장애 대응
+- API 및 이벤트 흐름 통합 테스트 자동화
+- readiness/liveness probe와 리소스 requests/limits 추가
